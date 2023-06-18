@@ -60,7 +60,6 @@ class CardGame:
                 card_image = pygame.transform.scale(card_image, (self.CARD_IMAGE_WIDTH, int(self.CARD_IMAGE_WIDTH * card_image.get_height() / card_image.get_width())))
                 self.card_images[card_name] = card_image
 
-
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -138,18 +137,3 @@ class CardGame:
 if __name__ == '__main__':
     game = CardGame()
     game.run()
-
-
-
-
-#TODO
-# how to implement this code to my code?
-
-# card_images = {}
-# suits = ['hearts', 'diamonds', 'clubs', 'spades']
-# ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace']
-
-# for suit in suits:
-#     for rank in ranks:
-#         card_name = f"{rank}_of_{suit}"
-#         card_images[card_name] = pygame.image.load(f"cards/{card_name}.png")

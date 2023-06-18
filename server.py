@@ -1,3 +1,6 @@
+
+
+
 import socket
 import pickle
 import random
@@ -21,8 +24,8 @@ def accept_connection(server_socket):
     return player_socket, player_address
 
 def create_deck():
-    suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
-    ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']
+    suits = ['hearts', 'diamonds', 'clubs', 'spades']
+    ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace']
     deck = [Card(suit, rank) for suit in suits for rank in ranks]
     random.shuffle(deck)
     return deck
@@ -87,9 +90,15 @@ def main():
             # Receive card choice from player 2
             player2_choice = receive_card_choice(player2_socket)
 
-            # Update scores based on card choices
-            result, player1_score, player2_score = update_scores(player1_choice, player2_choice, player1_score, player2_score)
-
+            if player1_choice.rank == player2_choice.rank:
+                result = 'It\'s a tie!'
+                player1_score += 1
+                player2_score += 1
+                print(result, "Player 1 score:", player1_score, "Player 2 score:", player2_score)
+            else:
+                # Update scores based on card choices
+                result, player1_score, player2_score = update_scores(player1_choice, player2_choice, player1_score, player2_score)
+                
             # Send the result and scores to both players
             send_result_and_scores(player1_socket, player2_socket, result, player1_score, player2_score)
 
