@@ -19,6 +19,8 @@ class CardGame:
         # Set up colors
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
+        self.CARD_IMAGE_WIDTH = 90
+
 
         # Connect to the server
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,10 +34,6 @@ class CardGame:
             pygame.quit()
             return
         
-        # Initialize player scores
-        self.player1_score = 0
-        self.player2_score = 0        
-
         # Receive the initial hand from the server
         try:
             self.player_hand = pickle.loads(self.client_socket.recv(1024))
@@ -44,6 +42,24 @@ class CardGame:
             self.client_socket.close()
             pygame.quit()
             return
+
+        # Initialize player scores
+        self.player1_score = 0
+        self.player2_score = 0    
+
+        # Load card images
+        self.card_images = {}
+        suits = ['hearts', 'diamonds', 'clubs', 'spades']
+        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace']
+
+        for suit in suits:
+            for rank in ranks:
+                card_name = f"{rank}_of_{suit}"
+                card_image_path = f"cards/{card_name}.png"
+                card_image = pygame.image.load(card_image_path)
+                card_image = pygame.transform.scale(card_image, (self.CARD_IMAGE_WIDTH, int(self.CARD_IMAGE_WIDTH * card_image.get_height() / card_image.get_width())))
+                self.card_images[card_name] = card_image
+
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -96,9 +112,10 @@ class CardGame:
             y = self.screen_height - self.card_height - 100
             pygame.draw.rect(self.screen, self.BLACK, (x, y, self.card_width, self.card_height))
             pygame.draw.rect(self.screen, self.WHITE, (x + 2, y + 2, self.card_width - 4, self.card_height - 4))
-            font = pygame.font.Font(None, 20)
-            text = font.render(str(card), True, self.BLACK)
-            self.screen.blit(text, (x + 20, y + 20))
+            card_name = f"{card.rank}_of_{card.suit}".lower()
+            card_image = self.card_images.get(card_name)
+            if card_image:
+                self.screen.blit(card_image, (x + 1, y + 2))
 
         # Display player scores
         font = pygame.font.Font(None, 30)
@@ -121,3 +138,18 @@ class CardGame:
 if __name__ == '__main__':
     game = CardGame()
     game.run()
+
+
+
+
+#TODO
+# how to implement this code to my code?
+
+# card_images = {}
+# suits = ['hearts', 'diamonds', 'clubs', 'spades']
+# ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace']
+
+# for suit in suits:
+#     for rank in ranks:
+#         card_name = f"{rank}_of_{suit}"
+#         card_images[card_name] = pygame.image.load(f"cards/{card_name}.png")
