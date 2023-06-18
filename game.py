@@ -3,94 +3,99 @@ import socket
 import pickle
 from card import Card
 
-# Initialize pygame
-pygame.init()
+class CardGame:
+    def __init__(self):
+        # Initialize pygame
+        pygame.init()
 
-# Define the screen dimensions
-screen_width, screen_height = 800, 600
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('Card Game')
+        # Set up the game window
+        self.screen_width, self.screen_height = 800, 600
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        pygame.display.set_caption('Card Game')
 
-# Define the card dimensions
-card_width, card_height = 100, 140
+        # Set up card dimensions
+        self.card_width, self.card_height = 100, 140
 
-# Define the colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+        # Set up colors
+        self.WHITE = (255, 255, 255)
+        self.BLACK = (0, 0, 0)
 
-# Create a TCP/IP socket
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Connect to the server
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_address = ('localhost', 5000)
 
-# Connect the socket to the server's address and port
-server_address = ('localhost', 5000)
-client_socket.connect(server_address)
-print('Connected to:', server_address)
+        try:
+            self.client_socket.connect(self.server_address)
+            print('Connected to:', self.server_address)
+        except ConnectionRefusedError:
+            print('Failed to connect to the server. Please make sure the server is running.')
+            pygame.quit()
+            return
 
-# Receive the initial hand from the server
-player_hand = pickle.loads(client_socket.recv(1024))
+        # Receive the initial hand from the server
+        try:
+            self.player_hand = pickle.loads(self.client_socket.recv(1024))
+        except pickle.UnpicklingError:
+            print('Failed to receive the initial hand from the server.')
+            self.client_socket.close()
+            pygame.quit()
+            return
 
-is_player_turn = True
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
 
-# Game loop
-running = True
-while running:
-    # Handle events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        # Handle mouse click events
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # Check if the left mouse button was clicked
-            if event.button == 1:
-                # Get the mouse position
-                mouse_x, mouse_y = pygame.mouse.get_pos()
-
-                # Check if it's the player's turn
-                if is_player_turn:
                     # Check if the mouse click was on a card
-                    for i, card in enumerate(player_hand):
-                        x = 100 + i * (card_width + 10)
-                        y = screen_height - card_height - 100
+                    for i, card in enumerate(self.player_hand):
+                        x = 100 + i * (self.card_width + 10)
+                        y = self.screen_height - self.card_height - 100
 
-                        # Check if the mouse click was within the card's boundaries
-                        if x <= mouse_x <= x + card_width and y <= mouse_y <= y + card_height:
-                            # Get the chosen card
-                            chosen_card = player_hand[i]
+                        if x <= mouse_x <= x + self.card_width and y <= mouse_y <= y + self.card_height:
+                            chosen_card = self.player_hand[i]
                             print("Player chose:", chosen_card)
 
-                            # Serialize the chosen card using pickle
-                            serialized_card = pickle.dumps(chosen_card)
-
-                            # Send the serialized card to the server
-                            client_socket.sendall(serialized_card)
+                            # Serialize and send the chosen card to the server
+                            try:
+                                serialized_card = pickle.dumps(chosen_card)
+                                self.client_socket.sendall(serialized_card)
+                            except (pickle.PickleError, socket.error):
+                                print('Failed to send the chosen card to the server.')
+                                self.client_socket.close()
+                                pygame.quit()
+                                return
 
                             # Remove the chosen card from the player's hand
-                            player_hand.pop(i)
+                            self.player_hand.pop(i)
 
-                            # It's no longer the player's turn
-                            is_player_turn = False
-                            
+    def display_cards(self):
+        self.screen.fill(self.WHITE)
 
+        # Display the player's hand
+        for i, card in enumerate(self.player_hand):
+            x = 100 + i * (self.card_width + 10)
+            y = self.screen_height - self.card_height - 100
+            pygame.draw.rect(self.screen, self.BLACK, (x, y, self.card_width, self.card_height))
+            pygame.draw.rect(self.screen, self.WHITE, (x + 2, y + 2, self.card_width - 4, self.card_height - 4))
+            font = pygame.font.Font(None, 20)
+            text = font.render(str(card), True, self.BLACK)
+            self.screen.blit(text, (x + 20, y + 20))
 
-    # Clear the screen
-    screen.fill(WHITE)
+        pygame.display.flip()
 
-    # Display the player's hand
-    for i, card in enumerate(player_hand):
-        x = 100 + i * (card_width + 10)
-        y = screen_height - card_height - 100
-        pygame.draw.rect(screen, BLACK, (x, y, card_width, card_height))
-        pygame.draw.rect(screen, WHITE, (x + 2, y + 2, card_width - 4, card_height - 4))
-        font = pygame.font.Font(None, 20)
-        text = font.render(str(card), True, BLACK)
-        screen.blit(text, (x + 20, y + 20))
+    def run(self):
+        self.running = True
+        while self.running:
+            self.handle_events()
+            self.display_cards()
 
-    # Update the screen
-    pygame.display.flip()
+        self.client_socket.close()
+        pygame.quit()
 
-# Close the connection
-client_socket.close()
-
-# Quit the game
-pygame.quit()
+if __name__ == '__main__':
+    game = CardGame()
+    game.run()
