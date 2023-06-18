@@ -31,6 +31,10 @@ class CardGame:
             print('Failed to connect to the server. Please make sure the server is running.')
             pygame.quit()
             return
+        
+        # Initialize player scores
+        self.player1_score = 0
+        self.player2_score = 0        
 
         # Receive the initial hand from the server
         try:
@@ -68,6 +72,17 @@ class CardGame:
                                 self.client_socket.close()
                                 pygame.quit()
                                 return
+                            
+                            # Receive the result and scores from the server
+                            try:
+                                result, player1_score, player2_score = pickle.loads(self.client_socket.recv(1024))
+                                self.player1_score = player1_score
+                                self.player2_score = player2_score
+                            except pickle.UnpicklingError:
+                                print('Failed to receive the result and scores from the server.')
+                                self.client_socket.close()
+                                pygame.quit()
+                                return
 
                             # Remove the chosen card from the player's hand
                             self.player_hand.pop(i)
@@ -84,6 +99,13 @@ class CardGame:
             font = pygame.font.Font(None, 20)
             text = font.render(str(card), True, self.BLACK)
             self.screen.blit(text, (x + 20, y + 20))
+
+        # Display player scores
+        font = pygame.font.Font(None, 30)
+        player1_score_text = font.render("Player 1 Score: " + str(self.player1_score), True, self.BLACK)
+        player2_score_text = font.render("Player 2 Score: " + str(self.player2_score), True, self.BLACK)
+        self.screen.blit(player1_score_text, (20, 20))
+        self.screen.blit(player2_score_text, (20, 60))
 
         pygame.display.flip()
 
